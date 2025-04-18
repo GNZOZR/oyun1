@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Barbie Dress-Up Game</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .barbie-body {
+            background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 400"><path d="M100,50 Q120,100 100,150 Q80,200 100,250 Q120,300 100,350" stroke="pink" fill="none"/></svg>');
+            background-repeat: no-repeat;
+            background-position: center;
+            background-size: contain;
+            position: relative;
+            height: 500px;
+        }
+        .dress-up-item {
+            transition: all 0.3s ease;
+        }
+        .dress-up-item:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 15px rgba(255, 105, 180, 0.5);
+        }
+        .selected-item {
+            border: 3px solid #FF69B4;
+            box-shadow: 0 0 20px rgba(255, 105, 180, 0.7);
+        }
+        .category-btn.active {
+            background-color: #FF69B4;
+            color: white;
+        }
+        .barbie-container {
+            background: linear-gradient(135deg, #ffcce6 0%, #ffb3d9 50%, #ff99cc 100%);
+        }
+        .item-preview {
+            position: absolute;
+            z-index: 10;
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body class="bg-pink-50">
+    <div class="container mx-auto px-4 py-8 barbie-container rounded-lg shadow-xl">
+        <header class="text-center mb-8">
+            <h1 class="text-5xl font-bold text-pink-600 mb-2">Barbie Dress-Up</h1>
+            <p class="text-xl text-pink-800">Create your perfect Barbie look!</p>
+        </header>
+
+        <div class="flex flex-col lg:flex-row gap-8">
+            <!-- Barbie Display Area -->
+            <div class="w-full lg:w-2/3 bg-white rounded-xl shadow-lg p-6">
+                <div class="barbie-body mx-auto w-full h-96 md:h-[500px] relative" id="barbie-display">
+                    <!-- Items will be positioned here by JavaScript -->
+                </div>
+                
+                <div class="mt-6 flex justify-center space-x-4">
+                    <button id="random-outfit" class="bg-pink-500 hover:bg-pink-600 text-white font-bold py-2 px-6 rounded-full transition-all transform hover:scale-105">
+                        <i class="fas fa-random mr-2"></i>Random Outfit
+                    </button>
+                    <button id="reset-outfit" class="bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-6 rounded-full transition-all transform hover:scale-105">
+                        <i class="fas fa-redo mr-2"></i>Reset
+                    </button>
+                    <button id="save-outfit" class="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-6 rounded-full transition-all transform hover:scale-105">
+                        <i class="fas fa-save mr-2"></i>Save
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Wardrobe Section -->
+            <div class="w-full lg:w-1/3 bg-white rounded-xl shadow-lg p-6">
+                <h2 class="text-2xl font-bold text-pink-600 mb-4">Wardrobe</h2>
+                
+                <!-- Category Tabs -->
+                <div class="flex flex-wrap gap-2 mb-6">
+                    <button class="category-btn active px-4 py-2 rounded-full bg-pink-100 text-pink-800 font-medium transition-all" data-category="dresses">
+                        <i class="fas fa-tshirt mr-2"></i>Dresses
+                    </button>
+                    <button class="category-btn px-4 py-2 rounded-full bg-pink-100 text-pink-800 font-medium transition-all" data-category="tops">
+                        <i class="fas fa-vest mr-2"></i>Tops
+                    </button>
+                    <button class="category-btn px-4 py-2 rounded-full bg-pink-100 text-pink-800 font-medium transition-all" data-category="bottoms">
+                        <i class="fas fa-vest-patches mr-2"></i>Bottoms
+                    </button>
+                    <button class="category-btn px-4 py-2 rounded-full bg-pink-100 text-pink-800 font-medium transition-all" data-category="shoes">
+                        <i class="fas fa-shoe-prints mr-2"></i>Shoes
+                    </button>
+                    <button class="category-btn px-4 py-2 rounded-full bg-pink-100 text-pink-800 font-medium transition-all" data-category="accessories">
+                        <i class="fas fa-gem mr-2"></i>Accessories
+                    </button>
+                </div>
+                
+                <!-- Items Grid -->
+                <div class="grid grid-cols-2 md:grid-cols-3 gap-4" id="wardrobe-items">
+                    <!-- Items will be loaded here by JavaScript -->
+                </div>
+            </div>
+        </div>
+        
+        <!-- Saved Outfits Section -->
+        <div class="mt-8 bg-white rounded-xl shadow-lg p-6">
+            <h2 class="text-2xl font-bold text-pink-600 mb-4">Saved Outfits</h2>
+            <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4" id="saved-outfits">
+                <div class="text-center text-gray-500 py-8">
+                    <i class="fas fa-star text-4xl mb-2"></i>
+                    <p>Your saved outfits will appear here</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Wardrobe items database
+            const wardrobeItems = {
+                dresses: [
+                    { id: 'dress1', name: 'Pink Ball Gown', color: '#FF69B4', position: { top: '30%', left: '50%', width: '60%' }, svg: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 400"><path d="M100,100 Q120,150 100,200 Q80,250 100,300 Q120,350 100,400 L80,400 Q60,350 80,300 Q100,250 120,300 Q140,350 120,400 L100,400 Q80,350 100,300" fill="%23FF69B4" stroke="%23D04673" stroke-width="2"/></svg>' },
+                    { id: 'dress2', name: 'Blue Evening Dress', color: '#6495ED', position: { top: '30%', left: '50%', width: '60%' }, svg: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 400"><path d="M100,100 Q120,120 100,150 Q80,180 100,220 Q120,260 100,300 L80,300 Q60,260 80,220 Q100,180 120,220 Q140,260 120,300 L100,300 Q80,260 100,220" fill="%236495ED" stroke="%23406B9D" stroke-width="2"/></svg>' },
+                    { id: 'dress3', name: 'Summer Floral', color: '#FFA07A', position: { top: '30%', left: '50%', width: '55%' }, svg: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 400"><path d="M100,100 Q110,130 90,150 Q110,170 90,200 Q110,230 90,260 Q110,290 90,320 L110,320 Q90,290 110,260 Q90,230 110,200 Q90,170 110,150 Q90,130 100,100" fill="%23FFA07A" stroke="%23CC7F5E" stroke-width="2"/></svg>' }
+                ],
+                tops: [
+                    { id: 'top1', name: 'Pink Crop Top', color: '#FFB6C1', position: { top: '25%', left: '50%', width: '40%' }, svg: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200"><path d="M100,50 Q120,80 100,120 Q80,150 100,180 L80,180 Q60,150 80,120 Q100,80 120,120 Q140,150 120,180 L100,180 Q80,150 100,120" fill="%23FFB6C1" stroke="%23CC8F9D" stroke-width="2"/></svg>' },
+                    { id: 'top2', name: 'White Blouse', color: '#FFFFFF', position: { top: '25%', left: '50%', width: '45%' }, svg: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200"><path d="M100,50 Q115,80 100,120 Q85,150 100,180 L85,180 Q70,150 85,120 Q100,80 115,120 Q130,150 115,180 L100,180 Q85,150 100,120" fill="%23FFFFFF" stroke="%23CCCCCC" stroke-width="2"/></svg>' }
+                ],
+                bottoms: [
+                    { id: 'skirt1', name: 'Pink Mini Skirt', color: '#FFC0CB', position: { top: '40%', left: '50%', width: '50%' }, svg: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200"><path d="M100,50 Q120,100 100,150 Q80,200 100,250 L80,250 Q60,200 80,150 Q100,100 120,150 Q140,200 120,250 L100,250 Q80,200 100,150" fill="%23FFC0CB" stroke="%23CC99A2" stroke-width="2"/></svg>' },
+                    { id: 'pants1', name: 'Denim Jeans', color: '#4682B4', position: { top: '40%', left: '50%', width: '45%' }, svg: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 300"><path d="M100,50 Q90,100 100,150 Q110,200 100,250 L90,250 Q80,200 90,150 Q100,100 110,150 Q120,200 110,250 L100,250 Q90,200 100,150" fill="%234682B4" stroke="%232D5477" stroke-width="2"/></svg>' }
+                ],
+                shoes: [
+                    { id: 'shoe1', name: 'Pink Heels', color: '#FF69B4', position: { top: '80%', left: '40%', width: '15%' }, svg: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><path d="M20,80 Q30,60 50,70 Q70,80 80,60 L90,70 Q80,90 60,80 Q40,70 30,90 Z" fill="%23FF69B4" stroke="%23D04673" stroke-width="2"/></svg>' },
+                    { id: 'shoe2', name: 'Silver Sandals', color: '#C0C0C0', position: { top: '80%', left: '60%', width: '15%' }, svg: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><path d="M20,80 Q30,60 50,70 Q70,80 80,60 L90,70 Q80,90 60,80 Q40,70 30,90 Z" fill="%23C0C0C0" stroke="%23999999" stroke-width="2"/></svg>' }
+                ],
+                accessories: [
+                    { id: 'necklace1', name: 'Pearl Necklace', color: '#FFFFFF', position: { top: '20%', left: '50%', width: '30%' }, svg: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 50"><circle cx="100" cy="25" r="20" fill="%23FFFFFF" stroke="%23CCCCCC" stroke-width="1"/><circle cx="80" cy="25" r="5" fill="%23FFFFFF" stroke="%23CCCCCC"/><circle cx="120" cy="25" r="5" fill="%23FFFFFF" stroke="%23CCCCCC"/></svg>' },
+                    { id: 'bag1', name: 'Pink Handbag', color: '#FF69B4', position: { top: '50%', left: '20%', width: '15%' }, svg: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 150"><rect x="20" y="30" width="60" height="80" rx="5" fill="%23FF69B4" stroke="%23D04673" stroke-width="2"/><path d="M40,30 Q50,10 60,30" fill="none" stroke="%23D04673" stroke-width="2"/></svg>' }
+                ]
+            };
+
+            // Current outfit state
+            let currentOutfit = {
+                dresses: null,
+                tops: null,
+                bottoms: null,
+                shoes: null,
+                accessories: null
+            };
+
+            let savedOutfits = [];
+            let currentCategory = 'dresses';
+
+            // DOM elements
+            const barbieDisplay = document.getElementById('barbie-display');
+            const wardrobeItemsContainer = document.getElementById('wardrobe-items');
+            const categoryButtons = document.querySelectorAll('.category-btn');
+            const randomOutfitBtn = document.getElementById('random-outfit');
+            const resetOutfitBtn = document.getElementById('reset-outfit');
+            const saveOutfitBtn = document.getElementById('save-outfit');
+            const savedOutfitsContainer = document.getElementById('saved-outfits');
+
+            // Initialize the game
+            function init() {
+                loadCategory(currentCategory);
+                setupEventListeners();
+            }
+
+            // Set up event listeners
+            function setupEventListeners() {
+                // Category buttons
+                categoryButtons.forEach(button => {
+                    button.addEventListener('click', function() {
+                        categoryButtons.forEach(btn => btn.classList.remove('active'));
+                        this.classList.add('active');
+                        currentCategory = this.dataset.category;
+                        loadCategory(currentCategory);
+                    });
+                });
+
+                // Action buttons
+                randomOutfitBtn.addEventListener('click', generateRandomOutfit);
+                resetOutfitBtn.addEventListener('click', resetOutfit);
+                saveOutfitBtn.addEventListener('click', saveOutfit);
+            }
+
+            // Load items for a category
+            function loadCategory(category) {
+                wardrobeItemsContainer.innerHTML = '';
+                
+                if (!wardrobeItems[category]) return;
+                
+                wardrobeItems[category].forEach(item => {
+                    const itemElement = document.createElement('div');
+                    itemElement.className = 'dress-up-item bg-white p-3 rounded-lg cursor-pointer text-center';
+                    itemElement.dataset.id = item.id;
+                    itemElement.dataset.category = category;
+                    
+                    // Create a preview of the item
+                    const previewDiv = document.createElement('div');
+                    previewDiv.className = 'mx-auto mb-2 w-16 h-16 md:w-20 md:h-20';
+                    previewDiv.style.backgroundImage = `url('data:image/svg+xml;utf8,${encodeURIComponent(item.svg)}')`;
+                    previewDiv.style.backgroundRepeat = 'no-repeat';
+                    previewDiv.style.backgroundPosition = 'center';
+                    previewDiv.style.backgroundSize = 'contain';
+                    
+                    // Item name
+                    const nameElement = document.createElement('p');
+                    nameElement.className = 'text-sm font-medium text-pink-800 truncate';
+                    nameElement.textContent = item.name;
+                    
+                    // Check if this item is currently worn
+                    if (currentOutfit[category] === item.id) {
+                        itemElement.classList.add('selected-item');
+                    }
+                    
+                    itemElement.appendChild(previewDiv);
+                    itemElement.appendChild(nameElement);
+                    
+                    // Add click event to wear the item
+                    itemElement.addEventListener('click', function() {
+                        wearItem(category, item.id);
+                        
+                        // Update selected state
+                        document.querySelectorAll(`.dress-up-item[data-category="${category}"]`).forEach(el => {
+                            el.classList.remove('selected-item');
+                        });
+                        this.classList.add('selected-item');
+                    });
+                    
+                    wardrobeItemsContainer.appendChild(itemElement);
+                });
+            }
+
+            // Wear an item
+            function wearItem(category, itemId) {
+                // Remove any existing item of the same category
+                const existingItem = document.querySelector(`.item-preview[data-category="${category}"]`);
+                if (existingItem) {
+                    existingItem.remove();
+                }
+                
+                // If clicking the same item again, remove it
+                if (currentOutfit[category] === itemId) {
+                    currentOutfit[category] = null;
+                    return;
+                }
+                
+                // Find the item in the wardrobe
+                const item = wardrobeItems[category].find(i => i.id === itemId);
+                if (!item) return;
+                
+                // Add the item to the display
+                const itemPreview = document.createElement('div');
+                itemPreview.className = 'item-preview';
+                itemPreview.dataset.category = category;
+                itemPreview.dataset.id = itemId;
+                
+                // Position and style the item
+                Object.keys(item.position).forEach(key => {
+                    itemPreview.style[key] = item.position[key];
+                });
+                
+                itemPreview.style.backgroundImage = `url('data:image/svg+xml;utf8,${encodeURIComponent(item.svg)}')`;
+                itemPreview.style.backgroundRepeat = 'no-repeat';
+                itemPreview.style.backgroundPosition = 'center';
+                itemPreview.style.backgroundSize = 'contain';
+                
+                barbieDisplay.appendChild(itemPreview);
+                
+                // Update current outfit
+                currentOutfit[category] = itemId;
+            }
+
+            // Generate a random outfit
+            function generateRandomOutfit() {
+                resetOutfit();
+                
+                // For each category, pick a random item (if available)
+                Object.keys(wardrobeItems).forEach(category => {
+                    if (wardrobeItems[category].length > 0) {
+                        const randomIndex = Math.floor(Math.random() * wardrobeItems[category].length);
+                        const randomItem = wardrobeItems[category][randomIndex];
+                        wearItem(category, randomItem.id);
+                    }
+                });
+                
+                // Update the UI to show selected items
+                updateSelectedItemsUI();
+            }
+
+            // Reset the outfit
+            function resetOutfit() {
+                // Remove all items from display
+                document.querySelectorAll('.item-preview').forEach(el => el.remove());
+                
+                // Reset current outfit
+                currentOutfit = {
+                    dresses: null,
+                    tops: null,
+                    bottoms: null,
+                    shoes: null,
+                    accessories: null
+                };
+                
+                // Update the UI
+                updateSelectedItemsUI();
+            }
+
+            // Update the selected items in the wardrobe UI
+            function updateSelectedItemsUI() {
+                Object.keys(currentOutfit).forEach(category => {
+                    const itemId = currentOutfit[category];
+                    
+                    // Remove selected class from all items in this category
+                    document.querySelectorAll(`.dress-up-item[data-category="${category}"]`).forEach(el => {
+                        el.classList.remove('selected-item');
+                    });
+                    
+                    // Add selected class to the current item (if any)
+                    if (itemId) {
+                        const selectedItem = document.querySelector(`.dress-up-item[data-id="${itemId}"]`);
+                        if (selectedItem) {
+                            selectedItem.classList.add('selected-item');
+                        }
+                    }
+                });
+            }
+
+            // Save the current outfit
+            function saveOutfit() {
+                // Check if there's anything to save
+                const hasItems = Object.values(currentOutfit).some(item => item !== null);
+                if (!hasItems) {
+                    alert('Please create an outfit before saving!');
+                    return;
+                }
+                
+                // Create a new saved outfit
+                const newOutfit = {
+                    id: Date.now().toString(),
+                    items: { ...currentOutfit }
+                };
+                
+                savedOutfits.push(newOutfit);
+                renderSavedOutfits();
+            }
+
+            // Render all saved outfits
+            function renderSavedOutfits() {
+                savedOutfitsContainer.innerHTML = '';
+                
+                if (savedOutfits.length === 0) {
+                    savedOutfitsContainer.innerHTML = `
+                        <div class="text-center text-gray-500 py-8">
+                            <i class="fas fa-star text-4xl mb-2"></i>
+                            <p>Your saved outfits will appear here</p>
+                        </div>
+                    `;
+                    return;
+                }
+                
+                savedOutfits.forEach(outfit => {
+                    const outfitElement = document.createElement('div');
+                    outfitElement.className = 'bg-white p-4 rounded-lg shadow-md cursor-pointer hover:shadow-lg transition-all';
+                    
+                    // Create a preview of the outfit
+                    const previewDiv = document.createElement('div');
+                    previewDiv.className = 'relative h-40 mb-3 bg-pink-100 rounded';
+                    
+                    // Add each item of the outfit to the preview
+                    Object.keys(outfit.items).forEach(category => {
+                        const itemId = outfit.items[category];
+                        if (itemId) {
+                            const categoryItems = wardrobeItems[category];
+                            const item = categoryItems.find(i => i.id === itemId);
+                            if (item) {
+                                const itemPreview = document.createElement('div');
+                                itemPreview.className = 'absolute';
+                                Object.keys(item.position).forEach(key => {
+                                    itemPreview.style[key] = item.position[key];
+                                });
+                                itemPreview.style.backgroundImage = `url('data:image/svg+xml;utf8,${encodeURIComponent(item.svg)}')`;
+                                itemPreview.style.backgroundRepeat = 'no-repeat';
+                                itemPreview.style.backgroundPosition = 'center';
+                                itemPreview.style.backgroundSize = 'contain';
+                                previewDiv.appendChild(itemPreview);
+                            }
+                        }
+                    });
+                    
+                    // Add a Barbie silhouette in the background
+                    const barbieSilhouette = document.createElement('div');
+                    barbieSilhouette.className = 'absolute inset-0 opacity-20';
+                    barbieSilhouette.style.backgroundImage = 'url(\'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 400"><path d="M100,50 Q120,100 100,150 Q80,200 100,250 Q120,300 100,350" stroke="pink" fill="none"/></svg>\')';
+                    barbieSilhouette.style.backgroundRepeat = 'no-repeat';
+                    barbieSilhouette.style.backgroundPosition = 'center';
+                    barbieSilhouette.style.backgroundSize = 'contain';
+                    previewDiv.appendChild(barbieSilhouette);
+                    
+                    // Add outfit info
+                    const infoDiv = document.createElement('div');
+                    infoDiv.className = 'flex justify-between items-center';
+                    
+                    const dateElement = document.createElement('p');
+                    dateElement.className = 'text-xs text-gray-500';
+                    dateElement.textContent = new Date(parseInt(outfit.id)).toLocaleDateString();
+                    
+                    const loadBtn = document.createElement('button');
+                    loadBtn.className = 'bg-pink-500 hover:bg-pink-600 text-white text-xs py-1 px-3 rounded-full';
+                    loadBtn.innerHTML = '<i class="fas fa-eye mr-1"></i> View';
+                    loadBtn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        loadOutfit(outfit.id);
+                    });
+                    
+                    const deleteBtn = document.createElement('button');
+                    deleteBtn.className = 'bg-gray-500 hover:bg-gray-600 text-white text-xs py-1 px-3 rounded-full ml-2';
+                    deleteBtn.innerHTML = '<i class="fas fa-trash mr-1"></i>';
+                    deleteBtn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        deleteOutfit(outfit.id);
+                    });
+                    
+                    infoDiv.appendChild(dateElement);
+                    infoDiv.appendChild(loadBtn);
+                    infoDiv.appendChild(deleteBtn);
+                    
+                    outfitElement.appendChild(previewDiv);
+                    outfitElement.appendChild(infoDiv);
+                    
+                    // Click to load the outfit
+                    outfitElement.addEventListener('click', () => {
+                        loadOutfit(outfit.id);
+                    });
+                    
+                    savedOutfitsContainer.appendChild(outfitElement);
+                });
+            }
+
+            // Load a saved outfit
+            function loadOutfit(outfitId) {
+                const outfit = savedOutfits.find(o => o.id === outfitId);
+                if (!outfit) return;
+                
+                resetOutfit();
+                
+                // Wear each item in the outfit
+                Object.keys(outfit.items).forEach(category => {
+                    const itemId = outfit.items[category];
+                    if (itemId) {
+                        wearItem(category, itemId);
+                    }
+                });
+                
+                // Update the UI
+                updateSelectedItemsUI();
+            }
+
+            // Delete a saved outfit
+            function deleteOutfit(outfitId) {
+                if (confirm('Are you sure you want to delete this outfit?')) {
+                    savedOutfits = savedOutfits.filter(o => o.id !== outfitId);
+                    renderSavedOutfits();
+                }
+            }
+
+            // Initialize the game
+            init();
+        });
+    </script>
+</body>
+</html>
